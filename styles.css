@@ -1,0 +1,281 @@
+/* ── Utility ── */
+.bsr-hidden {
+	display: none;
+}
+
+/* ── Search Bar Container ── */
+.bsr-search-bar {
+	position: sticky;
+	top: 0;
+	z-index: 100;
+	background: var(--background-secondary);
+	border-bottom: 1px solid var(--background-modifier-border);
+	padding: 6px 10px;
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	font-size: 13px;
+	opacity: 0;
+	transform: translateY(-100%);
+	transition: opacity 0.15s ease, transform 0.15s ease;
+	pointer-events: none;
+}
+
+.bsr-search-bar.bsr-visible {
+	opacity: 1;
+	transform: translateY(0);
+	pointer-events: auto;
+}
+
+/* ── Rows ── */
+.bsr-row {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	flex-wrap: nowrap;
+}
+
+/* ── Icons ── */
+.bsr-icon {
+	display: flex;
+	align-items: center;
+	color: var(--text-muted);
+	flex-shrink: 0;
+}
+
+.bsr-icon svg {
+	width: 16px;
+	height: 16px;
+}
+
+/* ── Inputs ── */
+.bsr-input {
+	flex: 1;
+	min-width: 0;
+	padding: 4px 8px;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 4px;
+	background: var(--background-primary);
+	color: var(--text-normal);
+	font-size: 13px;
+	font-family: var(--font-monospace);
+	outline: none;
+}
+
+.bsr-input:focus {
+	border-color: var(--interactive-accent);
+	box-shadow: 0 0 0 1px var(--interactive-accent);
+}
+
+/* ── Toggle Buttons ── */
+.bsr-toggle-group {
+	display: flex;
+	gap: 2px;
+	flex-shrink: 0;
+}
+
+.bsr-toggle {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 28px;
+	height: 28px;
+	padding: 0;
+	border: 1px solid transparent;
+	border-radius: 4px;
+	background: transparent;
+	color: var(--text-muted);
+	cursor: pointer;
+	transition: background 0.1s, color 0.1s;
+}
+
+.bsr-toggle:hover {
+	background: var(--background-modifier-hover);
+	color: var(--text-normal);
+}
+
+.bsr-toggle.bsr-toggle-active {
+	background: var(--interactive-accent);
+	color: var(--text-on-accent);
+	border-color: var(--interactive-accent);
+}
+
+.bsr-toggle svg {
+	width: 14px;
+	height: 14px;
+}
+
+/* ── Match Counter ── */
+.bsr-match-count {
+	font-size: 12px;
+	color: var(--text-muted);
+	white-space: nowrap;
+	min-width: 60px;
+	text-align: center;
+	flex-shrink: 0;
+}
+
+.bsr-match-count.bsr-no-matches {
+	color: #FF6188;
+}
+
+/* ── Navigation Buttons ── */
+.bsr-nav-group {
+	display: flex;
+	gap: 2px;
+	flex-shrink: 0;
+}
+
+.bsr-nav-btn {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 26px;
+	height: 26px;
+	padding: 0;
+	border: none;
+	border-radius: 4px;
+	background: transparent;
+	color: var(--text-muted);
+	cursor: pointer;
+}
+
+.bsr-nav-btn:hover {
+	background: var(--background-modifier-hover);
+	color: var(--text-normal);
+}
+
+.bsr-nav-btn svg {
+	width: 14px;
+	height: 14px;
+}
+
+/* ── Close Button ── */
+.bsr-close-btn {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 26px;
+	height: 26px;
+	padding: 0;
+	border: none;
+	border-radius: 4px;
+	background: transparent;
+	color: var(--text-muted);
+	cursor: pointer;
+	flex-shrink: 0;
+}
+
+.bsr-close-btn:hover {
+	background: var(--background-modifier-hover);
+	color: #FF6188;
+}
+
+.bsr-close-btn svg {
+	width: 14px;
+	height: 14px;
+}
+
+/* ── Replace Actions ── */
+.bsr-replace-actions {
+	display: flex;
+	gap: 4px;
+	flex-shrink: 0;
+}
+
+.bsr-action-btn {
+	padding: 4px 10px;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 4px;
+	background: var(--background-primary);
+	color: var(--text-normal);
+	font-size: 12px;
+	cursor: pointer;
+	white-space: nowrap;
+}
+
+.bsr-action-btn:hover {
+	background: var(--interactive-accent);
+	color: var(--text-on-accent);
+	border-color: var(--interactive-accent);
+}
+
+/* ── Regex Error ── */
+.bsr-regex-error {
+	padding: 2px 8px 2px 28px;
+	font-size: 11px;
+	color: #FF6188;
+	font-family: var(--font-monospace);
+}
+
+/* ── Capture Group Hint ── */
+.bsr-capture-hint {
+	padding: 2px 8px 2px 28px;
+	font-size: 11px;
+	color: var(--text-faint);
+	font-style: italic;
+}
+
+/* ── Editor Decorations ── */
+.bsr-match {
+	background: var(--bsr-match-color, rgba(255, 97, 136, 0.25));
+}
+
+.bsr-match.bsr-match-diff {
+	text-decoration: line-through;
+	text-decoration-color: var(--bsr-strikethrough-color, #FF6188);
+}
+
+.bsr-match-current {
+	background: var(--bsr-match-current-color, rgba(255, 216, 102, 0.35));
+}
+
+.bsr-replacement-preview {
+	background: var(--bsr-preview-color, rgba(169, 220, 118, 0.25));
+	color: var(--text-normal);
+	font-style: italic;
+}
+
+/* ── Settings Page ── */
+.bsr-settings-instructions {
+	margin-bottom: 16px;
+}
+
+.bsr-settings-instructions ul {
+	padding-left: 20px;
+}
+
+.bsr-settings-instructions li {
+	margin-bottom: 4px;
+}
+
+/* ── Mobile Adjustments ── */
+.is-mobile .bsr-search-bar {
+	padding: 8px 8px;
+	gap: 6px;
+}
+
+.is-mobile .bsr-input {
+	font-size: 16px;
+	padding: 6px 8px;
+}
+
+.is-mobile .bsr-toggle {
+	width: 34px;
+	height: 34px;
+}
+
+.is-mobile .bsr-nav-btn,
+.is-mobile .bsr-close-btn {
+	width: 34px;
+	height: 34px;
+}
+
+.is-mobile .bsr-action-btn {
+	padding: 6px 12px;
+	font-size: 14px;
+}
+
+.is-mobile .bsr-match-count {
+	font-size: 14px;
+}

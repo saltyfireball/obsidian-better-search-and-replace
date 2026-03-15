@@ -1,5 +1,7 @@
 # Better Search and Replace
 
+![Zip](https://img.shields.io/badge/zip-corrupt%20archive-fff?style=flat&logo=7zip&logoColor=FFFFFF&label=zip&labelColor=5B595C&color=5C7CFA) ![Superpower](https://img.shields.io/badge/superpower-finding%20typos-fff?style=flat&logo=grammarly&logoColor=FFFFFF&label=superpower&labelColor=5B595C&color=5C7CFA) ![To Do List](https://img.shields.io/badge/to%20do%20list-added%20more%20tasks-fff?style=flat&logo=todoist&logoColor=FFFFFF&label=to%20do%20list&labelColor=5B595C&color=78DCE8) ![GIF Quality](https://img.shields.io/badge/gif%20quality-potato%20certified-fff?style=flat&logo=giphy&logoColor=FFFFFF&label=gif%20quality&labelColor=5B595C&color=FFD866) ![PHP](https://img.shields.io/badge/php-please%20no-fff?style=flat&logo=php&logoColor=FFFFFF&label=PHP&labelColor=5B595C&color=FF6188) ![Caffeine](https://img.shields.io/badge/caffeine-administered-fff?style=flat&logo=buymeacoffee&logoColor=FFFFFF&label=caffeine&labelColor=5B595C&color=A9DC76) ![Peer Review](https://img.shields.io/badge/peer%20review-rubber%20duck-fff?style=flat&logo=duckduckgo&logoColor=FFFFFF&label=peer%20review&labelColor=5B595C&color=5C7CFA) ![DRM](https://img.shields.io/badge/drm-free%20as%20in%20beer-fff?style=flat&logo=creativecommons&logoColor=FFFFFF&label=DRM&labelColor=5B595C&color=FF6188) ![Clippy](https://img.shields.io/badge/clippy-it%20looks%20like%20youre%20stuck-fff?style=flat&logo=microsoftoffice&logoColor=FFFFFF&label=clippy&labelColor=5B595C&color=FC9867)
+
 <p align="center">
   <img src="assets/header.svg" width="600" />
 </p>

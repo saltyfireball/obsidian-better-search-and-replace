@@ -1,6 +1,6 @@
 {
 	"name": "obsidian-better-search-and-replace",
-	"version": "1.0.2",
+	"version": "1.0.3",
 	"description": "Enhanced search and replace with regex support, live diff preview, capture groups, and a floating editor bar.",
 	"main": "main.js",
 	"type": "module",

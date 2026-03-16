@@ -28,7 +28,8 @@ export class SearchReplaceSettingTab extends PluginSettingTab {
 
 		const instructions = containerEl.createEl("div", { cls: "bsr-settings-instructions" });
 		instructions.createEl("p", {
-			text: "Open the search bar via the command palette (\"Better Search and Replace: Open\") " +
+			text: "Open the search bar via the command palette " +
+				"(\"Better Search and Replace: Find and replace in current file\") " +
 				"or from the note toolbar helpers menu.",
 		});
 
@@ -40,6 +41,25 @@ export class SearchReplaceSettingTab extends PluginSettingTab {
 		featureList.createEl("li", { text: "Click the replace button to replace the current match, or replace all for all matches" });
 		featureList.createEl("li", { text: "In regex mode use $1, $2 etc for capture groups in the replacement field" });
 		featureList.createEl("li", { text: "Press escape or the close button to close the search bar" });
+
+		new Setting(containerEl).setName("Keyboard shortcut").setHeading();
+
+		const hotkeyInfo = containerEl.createEl("div", { cls: "bsr-settings-instructions" });
+		hotkeyInfo.createEl("p", {
+			text: "You can assign a hotkey to open this search bar instantly. " +
+				"To replace the built-in Cmd/Ctrl+F with this plugin:",
+		});
+
+		const hotkeySteps = hotkeyInfo.createEl("ol");
+		hotkeySteps.createEl("li", { text: "Open settings and go to the hotkeys tab" });
+		hotkeySteps.createEl("li", {
+			text: "Search for \"find and replace in current file\"",
+		});
+		hotkeySteps.createEl("li", { text: "Click the + button and press your desired key combination (e.g. Cmd/Ctrl+F)" });
+		hotkeySteps.createEl("li", {
+			text: "If the shortcut conflicts with the built-in search, "
+				+ "Obsidian will prompt you to remove the existing binding",
+		});
 
 		new Setting(containerEl).setName("Defaults").setHeading();
 

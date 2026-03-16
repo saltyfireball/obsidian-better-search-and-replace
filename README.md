@@ -34,12 +34,13 @@ Works on both desktop and mobile.
 - **Capture group hint** -- when regex mode is on, a hint reminds you that `$1`, `$2`, `$<name>` are available
 - **Customizable colors** -- match highlight, current match, strikethrough, and preview colors are all configurable in settings
 - **Keyboard shortcuts** -- Enter/Shift+Enter to navigate, Escape to close, Enter in replace field to replace current, Shift+Enter to replace all
-- **Command palette integration** -- open via "Better Search and Replace: Open"
+- **Command palette integration** -- open via "Better Search and Replace: Find and replace in current file"
+- **Hotkey support** -- assign any shortcut (e.g. Cmd/Ctrl+F) to replace the built-in search
 - **Note toolbar integration** -- accessible from the helpers modal when the note-toolbar plugin is installed
 
 ## How to Use
 
-1. Open the command palette and run **Better Search and Replace: Open**
+1. Open the command palette and run **Better Search and Replace: Find and replace in current file**
 2. Type your search query in the search field
 3. Matches are highlighted in the editor in real time
 4. Use the toggle buttons to enable:
@@ -49,6 +50,15 @@ Works on both desktop and mobile.
 5. Type replacement text in the replace field to see a live diff preview
 6. Click **Replace** to replace the current match, or **Replace All** to replace every match
 7. Press **Escape** or click the X button to close the search bar
+
+### Setting Up a Keyboard Shortcut
+
+To replace Obsidian's built-in `Cmd/Ctrl+F` with this plugin:
+
+1. Go to **Settings > Hotkeys**
+2. Search for **"Better Search and Replace: Find and replace in current file"**
+3. Click the **+** button and press your desired key combination (e.g. `Cmd/Ctrl+F`)
+4. If the shortcut conflicts with the built-in search, Obsidian will prompt you to remove the existing binding
 
 ### Regex Capture Groups
 

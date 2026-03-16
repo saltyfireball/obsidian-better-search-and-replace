@@ -26,8 +26,8 @@ export default class BetterSearchReplacePlugin extends Plugin {
 		this.registerEditorExtension([searchDecorationField]);
 
 		this.addCommand({
-			id: "open",
-			name: "Open",
+			id: "find-and-replace",
+			name: "Find and replace in current file",
 			editorCallback: () => {
 				this.openSearchBar();
 			},

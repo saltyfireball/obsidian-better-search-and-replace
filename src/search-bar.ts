@@ -82,16 +82,19 @@ export class SearchBar {
 		this.regexBtn.className = "bsr-toggle" + (this.state.useRegex ? " bsr-toggle-active" : "");
 		this.regexBtn.setAttribute("aria-label", "Use regular expression");
 		this.regexBtn.title = "Use regular expression";
+		this.regexBtn.tabIndex = -1;
 		setIcon(this.regexBtn, "regex");
 
 		this.caseBtn.className = "bsr-toggle" + (this.state.caseSensitive ? " bsr-toggle-active" : "");
 		this.caseBtn.setAttribute("aria-label", "Match case");
 		this.caseBtn.title = "Match case";
+		this.caseBtn.tabIndex = -1;
 		setIcon(this.caseBtn, "case-sensitive");
 
 		this.wordBtn.className = "bsr-toggle" + (this.state.wholeWord ? " bsr-toggle-active" : "");
 		this.wordBtn.setAttribute("aria-label", "Match whole word");
 		this.wordBtn.title = "Match whole word";
+		this.wordBtn.tabIndex = -1;
 		setIcon(this.wordBtn, "whole-word");
 
 		toggleGroup.appendChild(this.regexBtn);
@@ -106,11 +109,13 @@ export class SearchBar {
 		this.prevBtn.className = "bsr-nav-btn";
 		this.prevBtn.setAttribute("aria-label", "Previous match");
 		this.prevBtn.title = "Previous match";
+		this.prevBtn.tabIndex = -1;
 		setIcon(this.prevBtn, "chevron-up");
 
 		this.nextBtn.className = "bsr-nav-btn";
 		this.nextBtn.setAttribute("aria-label", "Next match");
 		this.nextBtn.title = "Next match";
+		this.nextBtn.tabIndex = -1;
 		setIcon(this.nextBtn, "chevron-down");
 
 		navGroup.appendChild(this.prevBtn);
@@ -119,6 +124,7 @@ export class SearchBar {
 		this.closeBtn.className = "bsr-close-btn";
 		this.closeBtn.setAttribute("aria-label", "Close search bar");
 		this.closeBtn.title = "Close (escape)";
+		this.closeBtn.tabIndex = -1;
 		setIcon(this.closeBtn, "x");
 
 		searchRow.appendChild(searchIcon);
@@ -146,10 +152,12 @@ export class SearchBar {
 		this.replaceBtn.className = "bsr-action-btn";
 		this.replaceBtn.textContent = "Replace";
 		this.replaceBtn.setAttribute("aria-label", "Replace current match");
+		this.replaceBtn.tabIndex = -1;
 
 		this.replaceAllBtn.className = "bsr-action-btn";
 		this.replaceAllBtn.textContent = "Replace all";
 		this.replaceAllBtn.setAttribute("aria-label", "Replace all matches");
+		this.replaceAllBtn.tabIndex = -1;
 
 		replaceActions.appendChild(this.replaceBtn);
 		replaceActions.appendChild(this.replaceAllBtn);

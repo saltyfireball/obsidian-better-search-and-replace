@@ -65,15 +65,19 @@ When regex mode is enabled, you can use standard JavaScript replacement patterns
 
 ## Installation
 
+### Obsidian Community Plugin
+
+PR is submitted, waiting for review.
+
 ### Manual
 
-1. Copy `main.js`, `manifest.json`, and `styles.css` into your vault's `.obsidian/plugins/obsidian-better-search-and-replace/` directory
+1. Copy `main.js`, `manifest.json`, and `styles.css` into your vault's `.obsidian/plugins/sfb-better-search-and-replace/` directory
 2. Enable the plugin in Obsidian's Community Plugins settings
 
 ### From Release
 
 1. Download the latest release from the [Releases](https://github.com/saltyfireball/obsidian-better-search-and-replace/releases) page
-2. Extract `main.js`, `manifest.json`, and `styles.css` into `.obsidian/plugins/obsidian-better-search-and-replace/`
+2. Extract `main.js`, `manifest.json`, and `styles.css` into `.obsidian/plugins/sfb-better-search-and-replace/`
 3. Enable the plugin in Obsidian settings
 
 ## Settings

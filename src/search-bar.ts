@@ -216,6 +216,9 @@ export class SearchBar {
 		this.searchInput.addEventListener("keydown", (e) => {
 			if (e.key === "Escape") {
 				this.dismiss();
+			} else if (e.key === "Tab") {
+				e.preventDefault();
+				this.replaceInput.focus();
 			} else if (e.key === "Enter") {
 				if (e.shiftKey) {
 					this.navigateMatch(-1);
@@ -228,6 +231,9 @@ export class SearchBar {
 		this.replaceInput.addEventListener("keydown", (e) => {
 			if (e.key === "Escape") {
 				this.dismiss();
+			} else if (e.key === "Tab") {
+				e.preventDefault();
+				this.searchInput.focus();
 			} else if (e.key === "Enter") {
 				if (e.shiftKey) {
 					this.replaceAll();

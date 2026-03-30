@@ -251,6 +251,11 @@
 
 /* ── Mobile Adjustments ── */
 .is-mobile .bsr-search-bar {
+	position: fixed;
+	top: calc(env(safe-area-inset-top, 0px) + var(--header-height, 48px));
+	left: 0;
+	right: 0;
+	z-index: 999;
 	padding: 8px 8px;
 	gap: 6px;
 }

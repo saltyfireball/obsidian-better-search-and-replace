@@ -27,6 +27,7 @@ export class SearchBar {
 	private state: SearchState;
 	private extensionAdded = false;
 	private debounceTimer: number | null = null;
+	private widgetHighlightEls: HTMLElement[] = [];
 
 	constructor(view: MarkdownView, settings: SearchReplaceSettings) {
 		this.view = view;
@@ -355,9 +356,12 @@ export class SearchBar {
 				showPreview,
 			}),
 		});
+
+		this.highlightWidgetMatches(editorView);
 	}
 
 	private clearDecorations(editorView: EditorView): void {
+		this.clearWidgetHighlights();
 		editorView.dispatch({
 			effects: setSearchDecorations.of({
 				matches: [],
@@ -366,6 +370,141 @@ export class SearchBar {
 				showPreview: false,
 			}),
 		});
+	}
+
+	// ------------------------------------------------------------------
+	// Widget / embed-block highlighting (tables, callouts, etc.)
+	// CM decorations can't penetrate rendered widgets, so we search
+	// the rendered DOM inside .cm-embed-block elements and wrap
+	// matching text nodes with highlight spans.
+	// ------------------------------------------------------------------
+
+	private clearWidgetHighlights(): void {
+		for (const span of this.widgetHighlightEls) {
+			const parent = span.parentNode;
+			if (parent) {
+				parent.replaceChild(
+					document.createTextNode(span.textContent ?? ""),
+					span,
+				);
+				parent.normalize();
+			}
+		}
+		this.widgetHighlightEls = [];
+	}
+
+	private highlightWidgetMatches(editorView: EditorView): void {
+		this.clearWidgetHighlights();
+
+		if (!this.state.query || this.state.matches.length === 0) return;
+
+		let pattern: string;
+		if (this.state.useRegex) {
+			pattern = this.state.query;
+		} else {
+			pattern = this.state.query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+		}
+
+		if (this.state.wholeWord) {
+			pattern = `\\b${pattern}\\b`;
+		}
+
+		const flags = this.state.caseSensitive ? "g" : "gi";
+
+		let regex: RegExp;
+		try {
+			regex = new RegExp(pattern, flags);
+		} catch {
+			return;
+		}
+
+		const blocks = editorView.dom.querySelectorAll(".cm-embed-block");
+
+		for (const block of Array.from(blocks)) {
+			this.highlightTextInElement(block, regex);
+		}
+	}
+
+	private highlightTextInElement(container: Element, regex: RegExp): void {
+		const walker = document.createTreeWalker(
+			container,
+			NodeFilter.SHOW_TEXT,
+			{
+				acceptNode(node: Text): number {
+					// Skip text inside our own highlight spans
+					if (
+						node.parentElement?.classList.contains(
+							"bsr-widget-match",
+						)
+					) {
+						return NodeFilter.FILTER_REJECT;
+					}
+					// Skip empty text nodes
+					if (!node.textContent) {
+						return NodeFilter.FILTER_REJECT;
+					}
+					return NodeFilter.FILTER_ACCEPT;
+				},
+			},
+		);
+
+		const textNodes: Text[] = [];
+		let current = walker.nextNode();
+		while (current) {
+			textNodes.push(current as Text);
+			current = walker.nextNode();
+		}
+
+		for (const textNode of textNodes) {
+			const text = textNode.textContent ?? "";
+			regex.lastIndex = 0;
+
+			const fragments: (string | HTMLSpanElement)[] = [];
+			let lastIndex = 0;
+			let matched = false;
+			let m: RegExpExecArray | null;
+
+			while ((m = regex.exec(text)) !== null) {
+				if (m[0].length === 0) {
+					regex.lastIndex++;
+					continue;
+				}
+				matched = true;
+
+				if (m.index > lastIndex) {
+					fragments.push(text.slice(lastIndex, m.index));
+				}
+
+				const span = document.createElement("span");
+				span.className = "bsr-widget-match";
+				span.textContent = m[0];
+				fragments.push(span);
+				this.widgetHighlightEls.push(span);
+
+				lastIndex = regex.lastIndex;
+			}
+
+			if (!matched) continue;
+
+			if (lastIndex < text.length) {
+				fragments.push(text.slice(lastIndex));
+			}
+
+			const parent = textNode.parentNode;
+			if (!parent) continue;
+
+			for (const frag of fragments) {
+				if (typeof frag === "string") {
+					parent.insertBefore(
+						document.createTextNode(frag),
+						textNode,
+					);
+				} else {
+					parent.insertBefore(frag, textNode);
+				}
+			}
+			parent.removeChild(textNode);
+		}
 	}
 
 	private navigateMatch(direction: number): void {
@@ -479,6 +618,7 @@ export class SearchBar {
 		if (this.debounceTimer !== null) {
 			clearTimeout(this.debounceTimer);
 		}
+		this.clearWidgetHighlights();
 		const editorView = this.getEditorView();
 		if (editorView) {
 			this.clearDecorations(editorView);

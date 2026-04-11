@@ -230,6 +230,12 @@
 	background: var(--bsr-match-current-color, rgba(255, 216, 102, 0.35));
 }
 
+/* Widget / embed-block highlights (tables, callouts, etc.) */
+.bsr-widget-match {
+	background: var(--bsr-match-color, rgba(255, 97, 136, 0.25));
+	border-radius: 2px;
+}
+
 .bsr-replacement-preview {
 	background: var(--bsr-preview-color, rgba(169, 220, 118, 0.25));
 	color: var(--text-normal);

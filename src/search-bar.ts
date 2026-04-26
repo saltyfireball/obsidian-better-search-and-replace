@@ -3,6 +3,7 @@ import type { MarkdownView } from "obsidian";
 import { EditorView } from "@codemirror/view";
 import { setSearchDecorations } from "./decorations";
 import type { ObsidianEditor } from "./global.d";
+import { registerSearchBar, unregisterSearchBar } from "./search-bar-registry";
 import { findMatches, getReplacementPreview, validateRegex } from "./search-engine";
 import type { SearchReplaceSettings, SearchMatch, SearchState } from "./types";
 
@@ -245,13 +246,13 @@ export class SearchBar {
 		});
 	}
 
-	private scheduleUpdate(): void {
+	scheduleUpdate(): void {
 		if (this.debounceTimer !== null) {
 			clearTimeout(this.debounceTimer);
 		}
 		this.debounceTimer = setTimeout(() => {
 			this.updateMatches();
-		}, 50) as unknown as number;
+		}, 150) as unknown as number;
 	}
 
 	private getEditorView(): EditorView | null {
@@ -268,6 +269,11 @@ export class SearchBar {
 	}
 
 	updateMatches(): void {
+		if (this.debounceTimer !== null) {
+			clearTimeout(this.debounceTimer);
+			this.debounceTimer = null;
+		}
+
 		const editorView = this.getEditorView();
 		if (!editorView) return;
 
@@ -409,7 +415,7 @@ export class SearchBar {
 			pattern = `\\b${pattern}\\b`;
 		}
 
-		const flags = this.state.caseSensitive ? "g" : "gi";
+		const flags = this.state.caseSensitive ? "gm" : "gim";
 
 		let regex: RegExp;
 		try {
@@ -586,6 +592,11 @@ export class SearchBar {
 
 		this.containerEl.classList.add("bsr-visible");
 
+		const editorView = this.getEditorView();
+		if (editorView) {
+			registerSearchBar(editorView, this);
+		}
+
 		const selection = this.view.editor.getSelection();
 		if (selection) {
 			this.searchInput.value = selection;
@@ -601,6 +612,7 @@ export class SearchBar {
 		const editorView = this.getEditorView();
 		if (editorView) {
 			this.clearDecorations(editorView);
+			unregisterSearchBar(editorView);
 		}
 
 		this.containerEl.classList.remove("bsr-visible");
@@ -622,6 +634,7 @@ export class SearchBar {
 		const editorView = this.getEditorView();
 		if (editorView) {
 			this.clearDecorations(editorView);
+			unregisterSearchBar(editorView);
 		}
 		if (this.containerEl.parentElement) {
 			this.containerEl.remove();

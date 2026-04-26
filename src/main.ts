@@ -2,6 +2,7 @@ import { MarkdownView, Plugin } from "obsidian";
 import type { App } from "obsidian";
 import { searchDecorationField } from "./decorations";
 import { SearchBar } from "./search-bar";
+import { docChangeListener } from "./search-bar-registry";
 import { SearchReplaceSettingTab } from "./settings-tab";
 import { DEFAULT_SETTINGS } from "./types";
 import type { SearchReplaceSettings } from "./types";
@@ -23,7 +24,7 @@ export default class BetterSearchReplacePlugin extends Plugin {
 
 		this.addSettingTab(new SearchReplaceSettingTab(this.app, this));
 
-		this.registerEditorExtension([searchDecorationField]);
+		this.registerEditorExtension([searchDecorationField, docChangeListener]);
 
 		this.addCommand({
 			id: "find-and-replace",

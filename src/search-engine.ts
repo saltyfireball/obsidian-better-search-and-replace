@@ -31,7 +31,7 @@ export function findMatches(
 		pattern = `\\b${pattern}\\b`;
 	}
 
-	const flags = caseSensitive ? "g" : "gi";
+	const flags = caseSensitive ? "gm" : "gim";
 
 	let regex: RegExp;
 	try {
@@ -87,7 +87,7 @@ export function computeReplacement(
 		pattern = `\\b${pattern}\\b`;
 	}
 
-	const flags = caseSensitive ? "g" : "gi";
+	const flags = caseSensitive ? "gm" : "gim";
 
 	try {
 		const regex = new RegExp(pattern, flags);

@@ -114,7 +114,7 @@ export function getReplacementPreview(
 		pattern = `\\b${pattern}\\b`;
 	}
 
-	const flags = caseSensitive ? "" : "i";
+	const flags = caseSensitive ? "m" : "im";
 
 	try {
 		const regex = new RegExp(pattern, flags);

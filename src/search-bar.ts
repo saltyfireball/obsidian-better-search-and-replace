@@ -56,6 +56,7 @@ export class SearchBar {
 	private debounceTimer: number | null = null;
 	private widgetHighlightEls: HTMLElement[] = [];
 	private previewMatchSpans: HTMLElement[] = [];
+	private previewMatchLines: number[] = [];
 	private layoutChangeRef: EventRef | null = null;
 	private modeObserver: MutationObserver | null = null;
 
@@ -389,8 +390,21 @@ export class SearchBar {
 		}
 
 		this.state.matches = result.matches;
+		this.previewMatchLines = result.matches.map(
+			(m) => sourceText.substring(0, m.from).split("\n").length - 1,
+		);
 		this.refreshPreviewHighlights();
 		this.updateMatchCountUI(result.matches.length);
+		if (result.matches.length > 0) {
+			// Mark whichever wrapped span corresponds to currentIndex (0 by default
+			// after a fresh search). Don't auto-scroll on initial render so we
+			// don't yank the user away from their current scroll position; they
+			// can hit Next to jump to the first match.
+			const target = this.previewMatchSpans[this.state.currentIndex] ?? null;
+			for (const span of this.previewMatchSpans) {
+				span.classList.toggle("bsr-widget-match-current", span === target);
+			}
+		}
 	}
 
 	private refreshPreviewHighlights(): void {
@@ -415,57 +429,42 @@ export class SearchBar {
 	}
 
 	private async navigatePreview(): Promise<void> {
-		const match = this.state.matches[this.state.currentIndex];
-		if (!match) return;
-
-		const sourceText = await this.getSourceText();
-		const line = sourceText.substring(0, match.from).split("\n").length - 1;
-
-		// Scroll the reading view to the match's line. previewMode is on
-		// MarkdownView; cast through unknown since the type isn't part of the
-		// public Obsidian typings.
-		const previewMode = (
-			this.view as unknown as {
-				previewMode?: { applyScroll?: (line: number) => void };
+		// If the target source match isn't yet rendered (its index is past the
+		// number of currently-wrapped spans), scroll the reading view to its
+		// line to force the lazy chunk to render, then re-walk.
+		if (this.state.currentIndex >= this.previewMatchSpans.length) {
+			const targetLine = this.previewMatchLines[this.state.currentIndex] ?? 0;
+			const previewMode = (
+				this.view as unknown as {
+					previewMode?: { applyScroll?: (line: number) => void };
+				}
+			).previewMode;
+			if (previewMode?.applyScroll) {
+				previewMode.applyScroll(targetLine);
 			}
-		).previewMode;
-		if (previewMode?.applyScroll) {
-			previewMode.applyScroll(line);
+			await waitFrames(2);
+			this.refreshPreviewHighlights();
 		}
-
-		// Wait two frames for the chunk renderer to flush, then re-walk the DOM
-		// so the newly rendered region gets highlighted. Pick the span closest
-		// to viewport center as the visible "current" indicator.
-		await waitFrames(2);
-		this.refreshPreviewHighlights();
-		this.markPreviewCurrentByViewport();
+		this.markCurrentPreviewSpan();
 	}
 
-	private markPreviewCurrentByViewport(): void {
-		const previewEl = this.getPreviewContainer();
-		if (!previewEl || this.previewMatchSpans.length === 0) return;
-
-		const previewRect = previewEl.getBoundingClientRect();
-		const targetY = previewRect.top + previewRect.height / 2;
-
-		let closest: HTMLElement | null = null;
-		let closestDist = Infinity;
+	/**
+	 * Mark the wrapped span corresponding to currentIndex as the active match
+	 * and scroll it into view.
+	 *
+	 * Mapping: `previewMatchSpans` is built by walking the rendered preview DOM
+	 * in document order, so spans are in source order. Obsidian renders preview
+	 * sections top-down, so previewMatchSpans[i] corresponds to source match i
+	 * for every i that's currently rendered. If currentIndex isn't yet rendered,
+	 * navigatePreview() above triggers the render before this runs.
+	 */
+	private markCurrentPreviewSpan(): void {
+		const target = this.previewMatchSpans[this.state.currentIndex] ?? null;
 		for (const span of this.previewMatchSpans) {
-			const rect = span.getBoundingClientRect();
-			const center = rect.top + rect.height / 2;
-			const dist = Math.abs(center - targetY);
-			if (dist < closestDist) {
-				closestDist = dist;
-				closest = span;
-			}
+			span.classList.toggle("bsr-widget-match-current", span === target);
 		}
-
-		for (const span of this.previewMatchSpans) {
-			span.classList.toggle("bsr-widget-match-current", span === closest);
-		}
-
-		if (closest) {
-			closest.scrollIntoView({ block: "center", inline: "nearest" });
+		if (target) {
+			target.scrollIntoView({ block: "center", inline: "nearest" });
 		}
 	}
 
@@ -515,6 +514,7 @@ export class SearchBar {
 	private clearAllHighlights(): void {
 		this.clearWidgetHighlights();
 		this.previewMatchSpans = [];
+		this.previewMatchLines = [];
 		const editorView = this.getEditorView();
 		if (editorView) {
 			this.clearDecorations(editorView);

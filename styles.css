@@ -1,6 +1,6 @@
 /* ── Utility ── */
 .bsr-hidden {
-	display: none;
+	display: none !important;
 }
 
 /* ── Search Bar Container ── */

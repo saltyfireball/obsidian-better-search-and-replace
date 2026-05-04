@@ -9,6 +9,21 @@ import type { SearchReplaceSettings, SearchMatch, SearchState } from "./types";
 
 type ViewMode = "source" | "preview";
 
+function waitFrames(count: number): Promise<void> {
+	return new Promise((resolve) => {
+		let remaining = count;
+		const tick = () => {
+			remaining -= 1;
+			if (remaining <= 0) {
+				resolve();
+				return;
+			}
+			requestAnimationFrame(tick);
+		};
+		requestAnimationFrame(tick);
+	});
+}
+
 const WIDGET_SELECTORS = [
 	".cm-embed-block",
 	".cm-html-embed",
@@ -307,7 +322,7 @@ export class SearchBar {
 		this.state.regexError = null;
 
 		if (this.mode === "preview") {
-			this.updatePreviewMatches();
+			void this.updatePreviewMatches();
 			return;
 		}
 
@@ -339,38 +354,119 @@ export class SearchBar {
 		this.updateDecorations(editorView);
 	}
 
-	private updatePreviewMatches(): void {
+	private async updatePreviewMatches(): Promise<void> {
 		this.clearWidgetHighlights();
 		this.previewMatchSpans = [];
 
+		if (!this.state.query) {
+			this.state.matches = [];
+			this.updateMatchCountUI(0);
+			return;
+		}
+
+		// The reading view lazy-renders chunks as you scroll, so walking the
+		// rendered DOM gives a misleading count. Find matches against the source
+		// text instead (gives the same count as source/edit mode) and highlight
+		// whatever happens to be in the DOM right now. Navigation triggers a
+		// scroll which renders the target chunk, then re-highlights.
+		const sourceText = await this.getSourceText();
+		const result = findMatches(
+			sourceText,
+			this.state.query,
+			this.state.useRegex,
+			this.state.caseSensitive,
+			this.state.wholeWord,
+		);
+
+		if (result.error) {
+			this.state.regexError = result.error;
+			this.regexErrorEl.textContent = result.error;
+			this.regexErrorEl.classList.remove("bsr-hidden");
+			this.matchCountEl.textContent = "";
+			this.state.matches = [];
+			this.state.currentIndex = -1;
+			return;
+		}
+
+		this.state.matches = result.matches;
+		this.refreshPreviewHighlights();
+		this.updateMatchCountUI(result.matches.length);
+	}
+
+	private refreshPreviewHighlights(): void {
+		this.clearWidgetHighlights();
+		this.previewMatchSpans = [];
 		const previewEl = this.getPreviewContainer();
-		if (!previewEl || !this.state.query) {
-			this.state.matches = [];
-			this.updateMatchCountUI(0);
-			return;
-		}
-
+		if (!previewEl) return;
 		const regex = this.buildSearchRegex();
-		if (!regex) {
-			this.state.matches = [];
-			this.updateMatchCountUI(0);
-			return;
-		}
-
+		if (!regex) return;
 		this.highlightTextInElement(previewEl, regex);
 		this.previewMatchSpans = [...this.widgetHighlightEls];
+	}
 
-		// Synthesize matches to keep state.matches.length in sync. Positions are
-		// not meaningful in preview mode (no document offsets); navigation uses
-		// previewMatchSpans directly.
-		this.state.matches = this.previewMatchSpans.map((span) => ({
-			from: 0,
-			to: 0,
-			text: span.textContent ?? "",
-		}));
+	private async getSourceText(): Promise<string> {
+		const file = this.view.file;
+		if (!file) return "";
+		try {
+			return await this.view.app.vault.cachedRead(file);
+		} catch {
+			return "";
+		}
+	}
 
-		this.updateMatchCountUI(this.previewMatchSpans.length);
-		this.markCurrentPreviewSpan(false);
+	private async navigatePreview(): Promise<void> {
+		const match = this.state.matches[this.state.currentIndex];
+		if (!match) return;
+
+		const sourceText = await this.getSourceText();
+		const line = sourceText.substring(0, match.from).split("\n").length - 1;
+
+		// Scroll the reading view to the match's line. previewMode is on
+		// MarkdownView; cast through unknown since the type isn't part of the
+		// public Obsidian typings.
+		const previewMode = (
+			this.view as unknown as {
+				previewMode?: { applyScroll?: (line: number) => void };
+			}
+		).previewMode;
+		if (previewMode?.applyScroll) {
+			previewMode.applyScroll(line);
+		}
+
+		// Wait two frames for the chunk renderer to flush, then re-walk the DOM
+		// so the newly rendered region gets highlighted. Pick the span closest
+		// to viewport center as the visible "current" indicator.
+		await waitFrames(2);
+		this.refreshPreviewHighlights();
+		this.markPreviewCurrentByViewport();
+	}
+
+	private markPreviewCurrentByViewport(): void {
+		const previewEl = this.getPreviewContainer();
+		if (!previewEl || this.previewMatchSpans.length === 0) return;
+
+		const previewRect = previewEl.getBoundingClientRect();
+		const targetY = previewRect.top + previewRect.height / 2;
+
+		let closest: HTMLElement | null = null;
+		let closestDist = Infinity;
+		for (const span of this.previewMatchSpans) {
+			const rect = span.getBoundingClientRect();
+			const center = rect.top + rect.height / 2;
+			const dist = Math.abs(center - targetY);
+			if (dist < closestDist) {
+				closestDist = dist;
+				closest = span;
+			}
+		}
+
+		for (const span of this.previewMatchSpans) {
+			span.classList.toggle("bsr-widget-match-current", span === closest);
+		}
+
+		if (closest) {
+			closest.scrollIntoView({ block: "center", inline: "nearest" });
+		}
 	}
 
 	private updateMatchCountUI(total: number): void {
@@ -414,19 +510,6 @@ export class SearchBar {
 			".markdown-reading-view .markdown-preview-view",
 		);
 		return direct instanceof HTMLElement ? direct : null;
-	}
-
-	private markCurrentPreviewSpan(scroll: boolean): void {
-		for (let i = 0; i < this.previewMatchSpans.length; i++) {
-			this.previewMatchSpans[i].classList.toggle(
-				"bsr-widget-match-current",
-				i === this.state.currentIndex,
-			);
-		}
-		const current = this.previewMatchSpans[this.state.currentIndex];
-		if (scroll && current) {
-			current.scrollIntoView({ block: "center", inline: "nearest" });
-		}
 	}
 
 	private clearAllHighlights(): void {
@@ -626,7 +709,7 @@ export class SearchBar {
 		this.matchCountEl.textContent = `${this.state.currentIndex + 1} of ${this.state.matches.length}`;
 
 		if (this.mode === "preview") {
-			this.markCurrentPreviewSpan(true);
+			void this.navigatePreview();
 			return;
 		}
 

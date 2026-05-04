@@ -218,7 +218,9 @@
 
 /* ── Editor Decorations ── */
 .bsr-match {
-	background: var(--bsr-match-color, rgba(255, 97, 136, 0.25));
+	background: var(--bsr-match-color, rgba(120, 220, 232, 0.45));
+	color: var(--text-normal);
+	border-radius: 2px;
 }
 
 .bsr-match.bsr-match-diff {
@@ -226,13 +228,19 @@
 	text-decoration-color: var(--bsr-strikethrough-color, #FF6188);
 }
 
-.bsr-match-current {
-	background: var(--bsr-match-current-color, rgba(255, 216, 102, 0.35));
+.bsr-match-current,
+.bsr-widget-match.bsr-widget-match-current {
+	background: var(--bsr-match-current-color, rgba(255, 216, 102, 0.7));
+	color: var(--text-normal);
+	outline: 1px solid var(--bsr-match-current-color, rgba(255, 216, 102, 0.9));
+	border-radius: 2px;
+	font-weight: 600;
 }
 
-/* Widget / embed-block highlights (tables, callouts, etc.) */
+/* Widget / embed-block / preview highlights (tables, callouts, reading mode) */
 .bsr-widget-match {
-	background: var(--bsr-match-color, rgba(255, 97, 136, 0.25));
+	background: var(--bsr-match-color, rgba(120, 220, 232, 0.45));
+	color: var(--text-normal);
 	border-radius: 2px;
 }
 

@@ -12,10 +12,10 @@ export const DEFAULT_SETTINGS: SearchReplaceSettings = {
 	useRegex: false,
 	caseSensitive: false,
 	wholeWord: false,
-	matchColor: "rgba(255, 97, 136, 0.25)",
+	matchColor: "rgba(120, 220, 232, 0.45)",
 	matchStrikethroughColor: "#FF6188",
-	previewColor: "rgba(169, 220, 118, 0.25)",
-	currentMatchColor: "rgba(255, 216, 102, 0.35)",
+	previewColor: "rgba(169, 220, 118, 0.45)",
+	currentMatchColor: "rgba(255, 216, 102, 0.7)",
 };
 
 export interface SearchMatch {

@@ -1,11 +1,20 @@
 import { setIcon } from "obsidian";
-import type { MarkdownView } from "obsidian";
+import type { EventRef, MarkdownView } from "obsidian";
 import { EditorView } from "@codemirror/view";
 import { setSearchDecorations } from "./decorations";
 import type { ObsidianEditor } from "./global.d";
 import { registerSearchBar, unregisterSearchBar } from "./search-bar-registry";
 import { findMatches, getReplacementPreview, validateRegex } from "./search-engine";
 import type { SearchReplaceSettings, SearchMatch, SearchState } from "./types";
+
+type ViewMode = "source" | "preview";
+
+const WIDGET_SELECTORS = [
+	".cm-embed-block",
+	".cm-html-embed",
+	".HyperMD-table-row",
+	"table",
+].join(", ");
 
 export class SearchBar {
 	private containerEl: HTMLElement;
@@ -22,13 +31,18 @@ export class SearchBar {
 	private replaceBtn: HTMLElement;
 	private replaceAllBtn: HTMLElement;
 	private closeBtn: HTMLElement;
+	private replaceRow!: HTMLElement;
 
 	private view: MarkdownView;
 	private settings: SearchReplaceSettings;
 	private state: SearchState;
+	private mode: ViewMode = "source";
 	private extensionAdded = false;
 	private debounceTimer: number | null = null;
 	private widgetHighlightEls: HTMLElement[] = [];
+	private previewMatchSpans: HTMLElement[] = [];
+	private layoutChangeRef: EventRef | null = null;
+	private modeObserver: MutationObserver | null = null;
 
 	constructor(view: MarkdownView, settings: SearchReplaceSettings) {
 		this.view = view;
@@ -136,8 +150,9 @@ export class SearchBar {
 		searchRow.appendChild(navGroup);
 		searchRow.appendChild(this.closeBtn);
 
-		const replaceRow = document.createElement("div");
-		replaceRow.className = "bsr-row";
+		this.replaceRow = document.createElement("div");
+		this.replaceRow.className = "bsr-row";
+		const replaceRow = this.replaceRow;
 
 		const replaceIcon = document.createElement("span");
 		replaceIcon.className = "bsr-icon";
@@ -274,9 +289,6 @@ export class SearchBar {
 			this.debounceTimer = null;
 		}
 
-		const editorView = this.getEditorView();
-		if (!editorView) return;
-
 		if (this.state.useRegex && this.state.query) {
 			const error = validateRegex(this.state.query);
 			this.state.regexError = error;
@@ -286,13 +298,21 @@ export class SearchBar {
 				this.matchCountEl.textContent = "";
 				this.state.matches = [];
 				this.state.currentIndex = -1;
-				this.clearDecorations(editorView);
+				this.clearAllHighlights();
 				return;
 			}
 		}
 
 		this.regexErrorEl.classList.add("bsr-hidden");
 		this.state.regexError = null;
+
+		if (this.mode === "preview") {
+			this.updatePreviewMatches();
+			return;
+		}
+
+		const editorView = this.getEditorView();
+		if (!editorView) return;
 
 		const docText = editorView.state.doc.toString();
 		const result = findMatches(
@@ -315,12 +335,50 @@ export class SearchBar {
 		}
 
 		this.state.matches = result.matches;
+		this.updateMatchCountUI(result.matches.length);
+		this.updateDecorations(editorView);
+	}
 
-		if (result.matches.length > 0) {
-			if (this.state.currentIndex < 0 || this.state.currentIndex >= result.matches.length) {
+	private updatePreviewMatches(): void {
+		this.clearWidgetHighlights();
+		this.previewMatchSpans = [];
+
+		const previewEl = this.getPreviewContainer();
+		if (!previewEl || !this.state.query) {
+			this.state.matches = [];
+			this.updateMatchCountUI(0);
+			return;
+		}
+
+		const regex = this.buildSearchRegex();
+		if (!regex) {
+			this.state.matches = [];
+			this.updateMatchCountUI(0);
+			return;
+		}
+
+		this.highlightTextInElement(previewEl, regex);
+		this.previewMatchSpans = [...this.widgetHighlightEls];
+
+		// Synthesize matches to keep state.matches.length in sync. Positions are
+		// not meaningful in preview mode (no document offsets); navigation uses
+		// previewMatchSpans directly.
+		this.state.matches = this.previewMatchSpans.map((span) => ({
+			from: 0,
+			to: 0,
+			text: span.textContent ?? "",
+		}));
+
+		this.updateMatchCountUI(this.previewMatchSpans.length);
+		this.markCurrentPreviewSpan(false);
+	}
+
+	private updateMatchCountUI(total: number): void {
+		if (total > 0) {
+			if (this.state.currentIndex < 0 || this.state.currentIndex >= total) {
 				this.state.currentIndex = 0;
 			}
-			this.matchCountEl.textContent = `${this.state.currentIndex + 1} of ${result.matches.length}`;
+			this.matchCountEl.textContent = `${this.state.currentIndex + 1} of ${total}`;
 			this.matchCountEl.classList.remove("bsr-no-matches");
 		} else if (this.state.query) {
 			this.matchCountEl.textContent = "No matches";
@@ -331,8 +389,53 @@ export class SearchBar {
 			this.matchCountEl.classList.remove("bsr-no-matches");
 			this.state.currentIndex = -1;
 		}
+	}
 
-		this.updateDecorations(editorView);
+	private buildSearchRegex(): RegExp | null {
+		let pattern: string;
+		if (this.state.useRegex) {
+			pattern = this.state.query;
+		} else {
+			pattern = this.state.query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+		}
+		if (this.state.wholeWord) {
+			pattern = `\\b${pattern}\\b`;
+		}
+		const flags = this.state.caseSensitive ? "gm" : "gim";
+		try {
+			return new RegExp(pattern, flags);
+		} catch {
+			return null;
+		}
+	}
+
+	private getPreviewContainer(): HTMLElement | null {
+		const direct = this.view.contentEl.querySelector(
+			".markdown-reading-view .markdown-preview-view",
+		);
+		return direct instanceof HTMLElement ? direct : null;
+	}
+
+	private markCurrentPreviewSpan(scroll: boolean): void {
+		for (let i = 0; i < this.previewMatchSpans.length; i++) {
+			this.previewMatchSpans[i].classList.toggle(
+				"bsr-widget-match-current",
+				i === this.state.currentIndex,
+			);
+		}
+		const current = this.previewMatchSpans[this.state.currentIndex];
+		if (scroll && current) {
+			current.scrollIntoView({ block: "center", inline: "nearest" });
+		}
+	}
+
+	private clearAllHighlights(): void {
+		this.clearWidgetHighlights();
+		this.previewMatchSpans = [];
+		const editorView = this.getEditorView();
+		if (editorView) {
+			this.clearDecorations(editorView);
+		}
 	}
 
 	private updateDecorations(editorView: EditorView): void {
@@ -404,29 +507,26 @@ export class SearchBar {
 
 		if (!this.state.query || this.state.matches.length === 0) return;
 
-		let pattern: string;
-		if (this.state.useRegex) {
-			pattern = this.state.query;
-		} else {
-			pattern = this.state.query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-		}
+		const regex = this.buildSearchRegex();
+		if (!regex) return;
 
-		if (this.state.wholeWord) {
-			pattern = `\\b${pattern}\\b`;
-		}
-
-		const flags = this.state.caseSensitive ? "gm" : "gim";
-
-		let regex: RegExp;
-		try {
-			regex = new RegExp(pattern, flags);
-		} catch {
-			return;
-		}
-
-		const blocks = editorView.dom.querySelectorAll(".cm-embed-block");
-
-		for (const block of Array.from(blocks)) {
+		// Walk widget DOM that CM decorations can't reach (callouts, embeds,
+		// rendered tables in live preview). Visit each unique top-level widget
+		// once; the walker dedupes nested text nodes via the bsr-widget-match
+		// reject filter.
+		const blocks = Array.from(editorView.dom.querySelectorAll(WIDGET_SELECTORS));
+		const visited = new Set<Element>();
+		for (const block of blocks) {
+			if (visited.has(block)) continue;
+			let isNested = false;
+			for (const ancestor of visited) {
+				if (ancestor.contains(block)) {
+					isNested = true;
+					break;
+				}
+			}
+			if (isNested) continue;
+			visited.add(block);
 			this.highlightTextInElement(block, regex);
 		}
 	}
@@ -525,6 +625,11 @@ export class SearchBar {
 
 		this.matchCountEl.textContent = `${this.state.currentIndex + 1} of ${this.state.matches.length}`;
 
+		if (this.mode === "preview") {
+			this.markCurrentPreviewSpan(true);
+			return;
+		}
+
 		const editorView = this.getEditorView();
 		if (!editorView) return;
 
@@ -537,6 +642,7 @@ export class SearchBar {
 	}
 
 	private replaceCurrent(): void {
+		if (this.mode === "preview") return;
 		if (this.state.matches.length === 0 || this.state.currentIndex < 0) return;
 
 		const editorView = this.getEditorView();
@@ -560,6 +666,7 @@ export class SearchBar {
 	}
 
 	private replaceAll(): void {
+		if (this.mode === "preview") return;
 		if (this.state.matches.length === 0) return;
 
 		const editorView = this.getEditorView();
@@ -592,20 +699,63 @@ export class SearchBar {
 
 		this.containerEl.classList.add("bsr-visible");
 
+		this.applyMode();
+
 		const editorView = this.getEditorView();
 		if (editorView) {
 			registerSearchBar(editorView, this);
 		}
 
-		const selection = this.view.editor.getSelection();
-		if (selection) {
-			this.searchInput.value = selection;
-			this.state.query = selection;
+		// Try to seed the search input with the current selection if there is one.
+		// In preview mode there's no editor selection, so just rely on focused/empty state.
+		try {
+			const selection = this.view.editor.getSelection();
+			if (selection) {
+				this.searchInput.value = selection;
+				this.state.query = selection;
+			}
+		} catch {
+			// view.editor not available in preview mode
 		}
+
+		this.layoutChangeRef = this.view.app.workspace.on("layout-change", () => {
+			this.applyMode();
+		});
+
+		// layout-change does not fire for in-leaf mode toggles (edit <-> reading).
+		// Watch the view container for class/style mutations as a backup signal,
+		// then debounce since modes also rearrange unrelated DOM during the
+		// switch. applyMode() is idempotent when the mode hasn't actually changed.
+		this.modeObserver = new MutationObserver(() => {
+			this.applyMode();
+		});
+		this.modeObserver.observe(this.view.contentEl, {
+			attributes: true,
+			subtree: true,
+			attributeFilter: ["class", "style"],
+		});
 
 		this.searchInput.focus();
 		this.searchInput.select();
 		this.updateMatches();
+	}
+
+	private applyMode(): void {
+		const newMode: ViewMode = this.view.getMode() === "preview" ? "preview" : "source";
+		const changed = newMode !== this.mode;
+		this.mode = newMode;
+
+		this.containerEl.classList.toggle("bsr-mode-preview", this.mode === "preview");
+		this.replaceRow.classList.toggle("bsr-hidden", this.mode === "preview");
+
+		if (changed) {
+			// Tear down highlights produced for the prior mode, reset cursor,
+			// and re-run against the new mode's content.
+			this.clearAllHighlights();
+			this.state.matches = [];
+			this.state.currentIndex = -1;
+			this.updateMatches();
+		}
 	}
 
 	dismiss(): void {
@@ -613,6 +763,17 @@ export class SearchBar {
 		if (editorView) {
 			this.clearDecorations(editorView);
 			unregisterSearchBar(editorView);
+		}
+		this.clearWidgetHighlights();
+		this.previewMatchSpans = [];
+
+		if (this.layoutChangeRef) {
+			this.view.app.workspace.offref(this.layoutChangeRef);
+			this.layoutChangeRef = null;
+		}
+		if (this.modeObserver) {
+			this.modeObserver.disconnect();
+			this.modeObserver = null;
 		}
 
 		this.containerEl.classList.remove("bsr-visible");
@@ -623,7 +784,11 @@ export class SearchBar {
 			}
 		}, 200);
 
-		this.view.editor.focus();
+		try {
+			this.view.editor.focus();
+		} catch {
+			// editor not available in preview mode
+		}
 	}
 
 	destroy(): void {
@@ -631,10 +796,19 @@ export class SearchBar {
 			clearTimeout(this.debounceTimer);
 		}
 		this.clearWidgetHighlights();
+		this.previewMatchSpans = [];
 		const editorView = this.getEditorView();
 		if (editorView) {
 			this.clearDecorations(editorView);
 			unregisterSearchBar(editorView);
+		}
+		if (this.layoutChangeRef) {
+			this.view.app.workspace.offref(this.layoutChangeRef);
+			this.layoutChangeRef = null;
+		}
+		if (this.modeObserver) {
+			this.modeObserver.disconnect();
+			this.modeObserver = null;
 		}
 		if (this.containerEl.parentElement) {
 			this.containerEl.remove();

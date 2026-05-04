@@ -29,8 +29,11 @@ export default class BetterSearchReplacePlugin extends Plugin {
 		this.addCommand({
 			id: "find-and-replace",
 			name: "Find and replace in current file",
-			editorCallback: () => {
-				this.openSearchBar();
+			checkCallback: (checking) => {
+				const view = this.app.workspace.getActiveViewOfType(MarkdownView);
+				if (!view) return false;
+				if (!checking) this.openSearchBar();
+				return true;
 			},
 		});
 

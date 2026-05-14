@@ -4,6 +4,25 @@ function escapeRegex(str: string): string {
 	return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+/**
+ * Decode common backslash escapes in a replacement string so users can type
+ * `\n`, `\r`, `\t` and get the actual control characters. `\\` produces a
+ * literal backslash; the two-pass-with-placeholder approach keeps `\\n` from
+ * being decoded as a newline.
+ */
+function decodeReplacementEscapes(input: string): string {
+	// "\uE000" is a Unicode private-use character, almost never appearing in
+	// real text, used as a placeholder so we can decode \\ and \n in two
+	// passes without one interfering with the other.
+	const PLACEHOLDER = "\uE000";
+	return input
+		.replace(/\\\\/g, PLACEHOLDER)
+		.replace(/\\n/g, "\n")
+		.replace(/\\r/g, "\r")
+		.replace(/\\t/g, "\t")
+		.replace(new RegExp(PLACEHOLDER, "g"), "\\");
+}
+
 export interface SearchResult {
 	matches: SearchMatch[];
 	error: string | null;
@@ -91,7 +110,7 @@ export function computeReplacement(
 
 	try {
 		const regex = new RegExp(pattern, flags);
-		return text.replace(regex, replacement);
+		return text.replace(regex, decodeReplacementEscapes(replacement));
 	} catch {
 		return text;
 	}
@@ -105,8 +124,10 @@ export function getReplacementPreview(
 	caseSensitive: boolean,
 	wholeWord: boolean,
 ): string {
+	const decoded = decodeReplacementEscapes(replacement);
+
 	if (!useRegex) {
-		return replacement;
+		return decoded;
 	}
 
 	let pattern = query;
@@ -118,9 +139,9 @@ export function getReplacementPreview(
 
 	try {
 		const regex = new RegExp(pattern, flags);
-		return matchText.replace(regex, replacement);
+		return matchText.replace(regex, decoded);
 	} catch {
-		return replacement;
+		return decoded;
 	}
 }
 

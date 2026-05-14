@@ -202,7 +202,9 @@ export class SearchBar {
 		this.regexErrorEl.className = "bsr-regex-error bsr-hidden";
 
 		this.captureHintEl.className = "bsr-capture-hint" + (this.state.useRegex ? "" : " bsr-hidden");
-		this.captureHintEl.textContent = "Use $1, $2 for capture groups, $<name> for named groups";
+		this.captureHintEl.textContent =
+			"Use $1, $2 for capture groups, $<name> for named groups. " +
+			"\\n inserts a newline (\\r, \\t also supported). \\\\ for a literal backslash.";
 
 		this.containerEl.appendChild(searchRow);
 		this.containerEl.appendChild(replaceRow);

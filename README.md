@@ -75,9 +75,11 @@ When regex mode is enabled, you can use standard JavaScript replacement patterns
 
 ## Installation
 
-### Obsidian Community Plugin (pending)
+### Obsidian Community Plugin
 
-This plugin has been submitted for review to the Obsidian community plugin directory. Once approved, you will be able to install it directly from **Settings > Community plugins > Browse** by searching for "Better Search and Replace".
+This plugin is available in the official Obsidian community plugin directory. Install it from **Settings > Community plugins > Browse** and search for "Better Search and Replace" or "Better Search and Replace by saltyfireball".
+
+Community plugin page: <https://community.obsidian.md/plugins/sfb-better-search-and-replace>
 
 ### Using BRAT
 

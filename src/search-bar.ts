@@ -18,9 +18,9 @@ function waitFrames(count: number): Promise<void> {
 				resolve();
 				return;
 			}
-			requestAnimationFrame(tick);
+			window.requestAnimationFrame(tick);
 		};
-		requestAnimationFrame(tick);
+		window.requestAnimationFrame(tick);
 	});
 }
 
@@ -59,10 +59,14 @@ export class SearchBar {
 	private previewMatchLines: number[] = [];
 	private layoutChangeRef: EventRef | null = null;
 	private modeObserver: MutationObserver | null = null;
+	// Document the view lives in. For popouts this is the popout's document,
+	// so DOM nodes get created in the correct window.
+	private doc: Document;
 
 	constructor(view: MarkdownView, settings: SearchReplaceSettings) {
 		this.view = view;
 		this.settings = settings;
+		this.doc = view.containerEl.ownerDocument;
 		this.state = {
 			query: "",
 			replace: "",
@@ -74,32 +78,32 @@ export class SearchBar {
 			regexError: null,
 		};
 
-		this.containerEl = document.createElement("div");
+		this.containerEl = this.doc.createElement("div");
 		this.containerEl.className = "bsr-search-bar";
 
-		this.searchInput = document.createElement("input");
-		this.replaceInput = document.createElement("input");
-		this.matchCountEl = document.createElement("span");
-		this.regexErrorEl = document.createElement("div");
-		this.captureHintEl = document.createElement("div");
-		this.regexBtn = document.createElement("button");
-		this.caseBtn = document.createElement("button");
-		this.wordBtn = document.createElement("button");
-		this.prevBtn = document.createElement("button");
-		this.nextBtn = document.createElement("button");
-		this.replaceBtn = document.createElement("button");
-		this.replaceAllBtn = document.createElement("button");
-		this.closeBtn = document.createElement("button");
+		this.searchInput = this.doc.createElement("input");
+		this.replaceInput = this.doc.createElement("input");
+		this.matchCountEl = this.doc.createElement("span");
+		this.regexErrorEl = this.doc.createElement("div");
+		this.captureHintEl = this.doc.createElement("div");
+		this.regexBtn = this.doc.createElement("button");
+		this.caseBtn = this.doc.createElement("button");
+		this.wordBtn = this.doc.createElement("button");
+		this.prevBtn = this.doc.createElement("button");
+		this.nextBtn = this.doc.createElement("button");
+		this.replaceBtn = this.doc.createElement("button");
+		this.replaceAllBtn = this.doc.createElement("button");
+		this.closeBtn = this.doc.createElement("button");
 
 		this.buildUI();
 		this.attachEvents();
 	}
 
 	private buildUI(): void {
-		const searchRow = document.createElement("div");
+		const searchRow = this.doc.createElement("div");
 		searchRow.className = "bsr-row";
 
-		const searchIcon = document.createElement("span");
+		const searchIcon = this.doc.createElement("span");
 		searchIcon.className = "bsr-icon";
 		setIcon(searchIcon, "search");
 
@@ -108,7 +112,7 @@ export class SearchBar {
 		this.searchInput.placeholder = "Search...";
 		this.searchInput.setAttribute("aria-label", "Search text");
 
-		const toggleGroup = document.createElement("div");
+		const toggleGroup = this.doc.createElement("div");
 		toggleGroup.className = "bsr-toggle-group";
 
 		this.regexBtn.className = "bsr-toggle" + (this.state.useRegex ? " bsr-toggle-active" : "");
@@ -135,7 +139,7 @@ export class SearchBar {
 
 		this.matchCountEl.className = "bsr-match-count";
 
-		const navGroup = document.createElement("div");
+		const navGroup = this.doc.createElement("div");
 		navGroup.className = "bsr-nav-group";
 
 		this.prevBtn.className = "bsr-nav-btn";
@@ -166,11 +170,11 @@ export class SearchBar {
 		searchRow.appendChild(navGroup);
 		searchRow.appendChild(this.closeBtn);
 
-		this.replaceRow = document.createElement("div");
+		this.replaceRow = this.doc.createElement("div");
 		this.replaceRow.className = "bsr-row";
 		const replaceRow = this.replaceRow;
 
-		const replaceIcon = document.createElement("span");
+		const replaceIcon = this.doc.createElement("span");
 		replaceIcon.className = "bsr-icon";
 		setIcon(replaceIcon, "replace");
 
@@ -179,7 +183,7 @@ export class SearchBar {
 		this.replaceInput.placeholder = "Replace...";
 		this.replaceInput.setAttribute("aria-label", "Replacement text");
 
-		const replaceActions = document.createElement("div");
+		const replaceActions = this.doc.createElement("div");
 		replaceActions.className = "bsr-replace-actions";
 
 		this.replaceBtn.className = "bsr-action-btn";
@@ -281,11 +285,11 @@ export class SearchBar {
 
 	scheduleUpdate(): void {
 		if (this.debounceTimer !== null) {
-			clearTimeout(this.debounceTimer);
+			window.clearTimeout(this.debounceTimer);
 		}
-		this.debounceTimer = setTimeout(() => {
+		this.debounceTimer = window.setTimeout(() => {
 			this.updateMatches();
-		}, 150) as unknown as number;
+		}, 150);
 	}
 
 	private getEditorView(): EditorView | null {
@@ -303,7 +307,7 @@ export class SearchBar {
 
 	updateMatches(): void {
 		if (this.debounceTimer !== null) {
-			clearTimeout(this.debounceTimer);
+			window.clearTimeout(this.debounceTimer);
 			this.debounceTimer = null;
 		}
 
@@ -578,7 +582,7 @@ export class SearchBar {
 			const parent = span.parentNode;
 			if (parent) {
 				parent.replaceChild(
-					document.createTextNode(span.textContent ?? ""),
+					this.doc.createTextNode(span.textContent ?? ""),
 					span,
 				);
 				parent.normalize();
@@ -617,7 +621,7 @@ export class SearchBar {
 	}
 
 	private highlightTextInElement(container: Element, regex: RegExp): void {
-		const walker = document.createTreeWalker(
+		const walker = this.doc.createTreeWalker(
 			container,
 			NodeFilter.SHOW_TEXT,
 			{
@@ -666,7 +670,7 @@ export class SearchBar {
 					fragments.push(text.slice(lastIndex, m.index));
 				}
 
-				const span = document.createElement("span");
+				const span = this.doc.createElement("span");
 				span.className = "bsr-widget-match";
 				span.textContent = m[0];
 				fragments.push(span);
@@ -687,7 +691,7 @@ export class SearchBar {
 			for (const frag of fragments) {
 				if (typeof frag === "string") {
 					parent.insertBefore(
-						document.createTextNode(frag),
+						this.doc.createTextNode(frag),
 						textNode,
 					);
 				} else {
@@ -863,7 +867,7 @@ export class SearchBar {
 
 		this.containerEl.classList.remove("bsr-visible");
 
-		setTimeout(() => {
+		window.setTimeout(() => {
 			if (this.containerEl.parentElement) {
 				this.containerEl.remove();
 			}
@@ -878,7 +882,7 @@ export class SearchBar {
 
 	destroy(): void {
 		if (this.debounceTimer !== null) {
-			clearTimeout(this.debounceTimer);
+			window.clearTimeout(this.debounceTimer);
 		}
 		this.clearWidgetHighlights();
 		this.previewMatchSpans = [];

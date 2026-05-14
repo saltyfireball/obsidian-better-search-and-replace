@@ -54,7 +54,7 @@ export default class BetterSearchReplacePlugin extends Plugin {
 
 		delete window.betterSearchReplaceAPI;
 
-		document.body.classList.remove("bsr-colors-applied");
+		activeDocument.body.classList.remove("bsr-colors-applied");
 	}
 
 	private openSearchBar(): void {
@@ -79,7 +79,7 @@ export default class BetterSearchReplacePlugin extends Plugin {
 	}
 
 	updateStyleVariables(): void {
-		const root = document.body;
+		const root = activeDocument.body;
 		root.style.setProperty("--bsr-match-color", this.settings.matchColor);
 		root.style.setProperty("--bsr-match-current-color", this.settings.currentMatchColor);
 		root.style.setProperty("--bsr-preview-color", this.settings.previewColor);

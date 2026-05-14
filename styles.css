@@ -1,6 +1,8 @@
 /* ── Utility ── */
-.bsr-hidden {
-	display: none !important;
+/* Doubled class gives this selector higher specificity than the default
+   row/element styles below, so it wins without needing !important. */
+.bsr-hidden.bsr-hidden {
+	display: none;
 }
 
 /* ── Search Bar Container ── */
@@ -224,8 +226,7 @@
 }
 
 .bsr-match.bsr-match-diff {
-	text-decoration: line-through;
-	text-decoration-color: var(--bsr-strikethrough-color, #FF6188);
+	text-decoration: line-through var(--bsr-strikethrough-color, #FF6188);
 }
 
 .bsr-match-current,

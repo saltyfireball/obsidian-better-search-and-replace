@@ -18,8 +18,8 @@ class ReplacementPreviewWidget extends WidgetType {
 		super();
 	}
 
-	toDOM(): HTMLElement {
-		const span = document.createElement("span");
+	toDOM(view: EditorView): HTMLElement {
+		const span = view.dom.ownerDocument.createElement("span");
 		span.className = "bsr-replacement-preview";
 		span.textContent = this.text;
 		return span;

@@ -1,7 +1,7 @@
 {
 	"id": "sfb-better-search-and-replace",
 	"name": "Better Search and Replace",
-	"version": "1.0.9",
+	"version": "1.0.10",
 	"minAppVersion": "1.0.0",
 	"description": "Enhanced search and replace with regex support, live diff preview, capture groups, and a floating editor bar.",
 	"author": "saltyfireball",
